@@ -1,19 +1,15 @@
 import com.opencsv.CSVReader;
-import org.tensorflow.Graph;
-import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.FloatBuffer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 public class Main {
 
@@ -54,7 +50,7 @@ public class Main {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         CSVReader reader = null;
         ArrayList<Passenger> passengers = new ArrayList<>();
         ArrayList<RawPassenger> rawPassengers = new ArrayList<>();
@@ -94,95 +90,16 @@ public class Main {
             passengers.add(new Passenger(rp, medianAge));
         }
         Passenger passenger = passengers.get(0);
-        try (SavedModelBundle b = SavedModelBundle.load("model", "serve")) {
-            // create the session from the Bundle
-            Session sess = b.session();
-            // create an input Tensor, value = 2.0f
-            float[] f = new float[]{(float) passenger.pClass, (float) passenger.sex, (float) passenger.familySize, (float) passenger.fare, (float) passenger.age};
+        float[] f = new float[]{(float) passenger.pClass, (float) passenger.sex, (float) passenger.familySize, (float) passenger.fare, (float) passenger.age};
 
-            Tensor x = Tensor.create(
-                    new long[]{5},
-                    FloatBuffer.wrap(f)
-            );
+        MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights("model.h5");
+        int inputs = 5;
+        INDArray features = Nd4j.create(f, new long[]{1, 5});
 
-            // run the model and get the result, 4.0f.
-            float[] y = sess.runner()
-                    .feed("input", x)
-                    .fetch("y")
-                    .run()
-                    .get(0)
-                    .copyTo(new float[1]);
-
-            // print out the result.
-            System.out.println(y[0]);
+        double prediction = model.output(features).getDouble(0);
+        for (float i : f) {
+            System.out.print(i + " | ");
         }
-
-//        evaluate_passenger(passengers.get(0));
-    }
-
-//    private static void evaluate_passenger(Passenger passenger) {
-//        String modelDir = "";
-//
-//        byte[] graphDef = readAllBytesOrExit(Paths.get("./", "saved_model.pb"));
-//        String[] labels = new String[]{"dead", "alive"};
-//
-//
-//        float[] labelProbabilities = executeGraph(graphDef, Tensor.create(new long[]{5}, FloatBuffer.wrap(f)));
-//
-//        int bestLabelIdx = maxIndex(labelProbabilities);
-//        System.out.println(
-//                String.format("BEST MATCH: %s (%.2f%% likely)", labels[bestLabelIdx],
-//                        labelProbabilities[bestLabelIdx] * 100f));
-//
-//    }
-
-    private static float[] executeGraph(byte[] graphDef, Tensor<Float> image) {
-        try (Graph g = new Graph()) {
-            g.importGraphDef(graphDef);
-            try (Session s = new Session(g);
-                 // Generally, there may be multiple output tensors, all of them must be closed to prevent resource leaks.
-                 Tensor<Float> result =
-                         s.runner().feed("input", image).fetch("output").run().get(0).expect(Float.class)) {
-                final long[] rshape = result.shape();
-                if (result.numDimensions() != 2 || rshape[0] != 1) {
-                    throw new RuntimeException(
-                            String.format(
-                                    "Expected model to produce a [1 N] shaped tensor where N is the number of labels, instead it produced one with shape %s",
-                                    Arrays.toString(rshape)));
-                }
-                int nlabels = (int) rshape[1];
-                return result.copyTo(new float[1][nlabels])[0];
-            }
-        }
-    }
-
-    private static int maxIndex(float[] probabilities) {
-        int best = 0;
-        for (int i = 1; i < probabilities.length; ++i) {
-            if (probabilities[i] > probabilities[best]) {
-                best = i;
-            }
-        }
-        return best;
-    }
-
-    private static byte[] readAllBytesOrExit(Path path) {
-        try {
-            return Files.readAllBytes(path);
-        } catch (IOException e) {
-            System.err.println("Failed to read [" + path + "]: " + e.getMessage());
-            System.exit(1);
-        }
-        return null;
-    }
-
-    private static List<String> readAllLinesOrExit(Path path) {
-        try {
-            return Files.readAllLines(path, Charset.forName("UTF-8"));
-        } catch (IOException e) {
-            System.err.println("Failed to read [" + path + "]: " + e.getMessage());
-            System.exit(0);
-        }
-        return null;
+        System.out.println(prediction);
     }
 }
