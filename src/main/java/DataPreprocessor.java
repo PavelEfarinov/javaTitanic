@@ -1,9 +1,23 @@
-import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
-import java.io.FileReader;
-import java.util.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Class is used to manipulate data in .csv
+ */
 
 public class DataPreprocessor {
 
@@ -13,8 +27,10 @@ public class DataPreprocessor {
      */
     public static List<RawPassenger> readFromCsv(String filename) {
 
-        try {
-            CsvToBean<RawPassenger> csvToBean = new CsvToBeanBuilder(new FileReader(filename))
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get(filename))
+        ) {
+            CsvToBean<RawPassenger> csvToBean = new CsvToBeanBuilder(reader)
                     .withType(RawPassenger.class)
                     .build();
             return csvToBean.parse();
@@ -47,24 +63,31 @@ public class DataPreprocessor {
     }
 
     /**
-     * @param filename
-     * @param passengers
+     * @param filename   path to file to save the modified data to
+     * @param passengers list of passengers
      */
 
-    public static void writeToCsv(String filename, List<Passenger> passengers) {
+    public static void writeToCsv(String filename, List<Passenger> passengers) throws CsvDataTypeMismatchException, CsvRequiredFieldEmptyException, IOException {
 
+        try (
+                Writer writer = Files.newBufferedWriter(Paths.get(filename))
+        ) {
+            StatefulBeanToCsv<Passenger> beanToCsv = new StatefulBeanToCsvBuilder(writer)
+                    .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
+                    .build();
+
+            for (Passenger passenger : passengers) {
+                beanToCsv.write(passenger);
+            }
+        }
     }
 
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("You should provide a path to .csv file!");
-        } else {
-            List<RawPassenger> list = readFromCsv(args[0]);
 
-            for (RawPassenger rawPassenger : list) {
-                System.out.println(rawPassenger.name + "\n");
-            }
-//            writeToCsv(args[0], modifyData(readFromCsv(args[0])));
+    public static void main(String[] args) throws CsvRequiredFieldEmptyException, IOException, CsvDataTypeMismatchException {
+        if (args.length < 2) {
+            System.err.println("You should provide a path to input and output .csv file!");
+        } else {
+            writeToCsv(args[1], getModifiedData(readFromCsv(args[0])));
         }
     }
 
