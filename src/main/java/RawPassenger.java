@@ -1,3 +1,5 @@
+import com.opencsv.bean.CsvBindByName;
+
 /**
  * Class is used to store "raw" information from .csv inputs
  *
@@ -5,29 +7,42 @@
  */
 public class RawPassenger {
 
+    @CsvBindByName(column = "PassengerId", required = true)
     public String passengerId;
-    public String pClass;
-    public String name;
-    public String sex;
-    public String age;
-    public String sibSp;
-    public String parch;
-    public String ticket;
-    public String fare;
-    public String cabin;
-    public String embarked;
-    RawPassenger(String[] csvRow) {
-        passengerId = csvRow[0];
-        pClass = csvRow[1];
-        name = csvRow[2];
-        sex = csvRow[3];
-        age = csvRow[4];
-        sibSp = csvRow[5];
-        parch = csvRow[6];
-        ticket = csvRow[7];
-        fare = csvRow[8];
-        cabin = csvRow[9];
-        embarked = csvRow[10];
-    }
 
+    @CsvBindByName(column = "Pclass", required = true)
+    public String pClass;
+
+    @CsvBindByName(column = "Name")
+    public String name;
+
+    @CsvBindByName(column = "Sex", required = true)
+    public String sex;
+
+    @CsvBindByName(column = "Age")
+    public String age;
+
+    @CsvBindByName(column = "SibSp")
+    public String sibSp;
+
+    @CsvBindByName(column = "Parch")
+    public String parch ;
+
+    @CsvBindByName(column = "Ticket")
+    public String ticket;
+
+    @CsvBindByName(column = "Fare")
+    public String fare;
+
+    @CsvBindByName(column = "Cabin")
+    public String cabin;
+
+    @CsvBindByName(column = "Embarked")
+    public String embarked;
+
+    @CsvBindByName(column = "Survived")
+    public String survived;
+
+    public RawPassenger() {
+    }
 }
