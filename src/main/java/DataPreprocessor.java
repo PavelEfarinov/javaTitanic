@@ -52,10 +52,14 @@ public class DataPreprocessor {
     public static List<Passenger> getModifiedData(List<RawPassenger> rawPassengers) {
 
         ArrayList<Passenger> passengers = new ArrayList<>();
+
         // calculating median age for absent info
-        rawPassengers.sort(Comparator.comparingInt(p -> (p.age.equals("") ? 0 : (int) Double.parseDouble(p.age))));
-        double medianAge = rawPassengers.get(rawPassengers.size() / 2).age.equals("") ? 0 : Double.parseDouble(rawPassengers.get(rawPassengers.size() / 2).age);
-        // dropping unused fields
+        List<RawPassenger> passengerList = new ArrayList<>(rawPassengers);
+        passengerList.removeIf(rawPassenger -> rawPassenger.age.equals(""));
+        passengerList.sort(Comparator.comparingInt(p -> ((int) Double.parseDouble(p.age))));
+
+        double medianAge = Double.parseDouble(passengerList.get(rawPassengers.size() / 2).age);
+        
         for (RawPassenger rp : rawPassengers) {
             passengers.add(new Passenger(rp, medianAge));
         }
