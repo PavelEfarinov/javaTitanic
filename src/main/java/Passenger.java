@@ -49,7 +49,7 @@ public class Passenger {
     }
 
     public float[] toFloatArray() {
-        return new float[]{};
+        return new float[]{(float) age, (float) familySize, (float) fare, (float) pClass, (float) sex};
     }
 
 }

@@ -20,11 +20,12 @@ public class Main {
         for (Passenger passenger : passengers) {
             MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights("model.h5");
 
-            int inputs = 5;
-            float[] f = new float[]{(float) passenger.pClass, (float) passenger.sex, (float) passenger.familySize, (float) passenger.fare, (float) passenger.age};
+            float[] f = passenger.toFloatArray();
+            int inputs = f.length;
             INDArray features = Nd4j.create(f, 1, inputs);
 
             double prediction = model.output(features).getDouble(0);
+            System.out.println(prediction);
             outputfile.append(passenger.passengerId).append(",").append(prediction > 0.5 ? 1 : 0).append("\n");
         }
 
